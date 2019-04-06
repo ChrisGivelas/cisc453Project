@@ -47,7 +47,6 @@ class Environment:
         return all_dead
 
     def bad_reward(self, dead, amt_watr):
-        print("w"+str(amt_watr))
         return 1 if amt_watr > 0 and not dead else 0
 
     def good_reward(self, old_moisture, new_moisture, dead, amt_watr):
