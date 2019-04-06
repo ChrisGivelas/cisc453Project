@@ -27,13 +27,13 @@ class Environment:
         if self.reward_func:
             reward = self.good_reward(old_moisture, new_moisture, dead, amt_watr)
         else:
-            reward = self.bad_reward(old_moisture, new_moisture, dead, amt_watr)
+            reward = self.bad_reward(dead, amt_watr)
 
         self.timestep += 1
         self.timestep = self.timestep % self.num_plants
         new_state, dead = self.plants[self.timestep].current_state()
 
-        print("Timestep: " + str(self.timestep) + " Reward: " + str(reward))
+        #print("Timestep: " + str(self.timestep) + " Reward: " + str(reward))
 
         return new_state, reward, self.is_done()
 
@@ -46,8 +46,7 @@ class Environment:
         if all_dead: print("ALL DEAD")
         return all_dead
 
-    def bad_reward(self, old_moisture, new_moisture, dead, amt_watr):
-        print(amt_watr)
+    def bad_reward(self, dead, amt_watr):
         return 1 if amt_watr > 0 and not dead else 0
 
     def good_reward(self, old_moisture, new_moisture, dead, amt_watr):
