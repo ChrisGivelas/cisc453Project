@@ -20,14 +20,15 @@ class DQNAgent:
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.995
         self.learning_rate = 0.001
+        self.out_threshold = 0.5
         self.model = self._build_model()
 
     def _build_model(self):
         # Neural Net for Deep-Q learning Model
         model = Sequential()
-        model.add(Dense(24, input_dim=self.state_size, activation='relu'))
-        model.add(Dense(24, activation='relu'))
-        model.add(Dense(self.action_size, activation='softmax'))
+        model.add(Dense(24, input_dim=self.state_size, activation='linear'))
+        model.add(Dense(24, activation='linear'))
+        model.add(Dense(self.action_size, activation='linear'))
         model.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
         return model
 
@@ -35,10 +36,10 @@ class DQNAgent:
         self.memory.append((state, action, reward, next_state, done))
 
     def act(self, state):
-        if np.random.rand() <= self.epsilon:
-            return random.randrange(self.action_size)
+        #if np.random.rand() <= self.epsilon:
+        #    return random.randrange(self.action_size)
         act_values = self.model.predict(state)
-        return np.argmax(act_values[0])  # returns action
+        return int(act_values[0][0] < self.out_threshold) # returns action
 
     def replay(self, batch_size):
         minibatch = random.sample(self.memory, batch_size)
@@ -46,9 +47,9 @@ class DQNAgent:
             target = reward
             if not done:
                 target = (reward + self.gamma *
-                          np.amax(self.model.predict(next_state)[0]))
+                          int(self.model.predict(next_state)[0][0] < self.out_threshold))
             target_f = self.model.predict(state)
-            target_f[0][action] = target
+            #target_f[0][action] = target
 
             self.model.fit(state, target_f, epochs=1, verbose=0)
         if self.epsilon > self.epsilon_min:
@@ -62,7 +63,7 @@ class DQNAgent:
 
 
 if __name__ == "__main__":
-    env = Environment(5, False)
+    env = Environment(num_plants=5, reward_func=False)
     state_size = env.observation_space
     action_size = env.action_space
     agent = DQNAgent(state_size, action_size)
@@ -74,14 +75,13 @@ if __name__ == "__main__":
         state = env.reset()
         state = np.reshape(state, [1, state_size])
         for time in range(500):
-
-            action = agent.act(state)
-            next_state, reward, done = env.step(action)
+            pour_amount = agent.act(state)
+            next_state, reward, done = env.step(pour_amount)
             reward = reward if not done else -10
             next_state = np.reshape(next_state, [1, state_size])
-            agent.remember(state, action, reward, next_state, done)
+            agent.remember(state, pour_amount, reward, next_state, done)
             state = next_state
-            if done:
+            if done or len(agent.memory) > 1 and len(agent.memory) % 50 == 0:
                 print("episode: {}/{}, score: {}, e: {:.2}"
                       .format(e, EPISODES, time, agent.epsilon))
                 break
