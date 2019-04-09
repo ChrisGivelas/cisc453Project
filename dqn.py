@@ -63,7 +63,7 @@ class DQNAgent:
 
 
 if __name__ == "__main__":
-    env = Environment(num_plants=5, reward_func=False)
+    env = Environment(num_plants=5, good_reward_func=False)
     state_size = env.observation_space
     action_size = env.action_space
     agent = DQNAgent(state_size, action_size)

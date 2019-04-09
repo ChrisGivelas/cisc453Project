@@ -1,5 +1,5 @@
 import random
-import math as mt
+import math
 
 # (
 #   enumerated value,
@@ -8,9 +8,9 @@ import math as mt
 # )
 
 POT_SIZES = [
-    (1, "SMALL", (100, 200)),
-    (2, "MEDIUM", (201, 400)),
-    (3, "LARGE", (401, 800))
+    (1, "SMALL", (140, 200)),
+    (2, "MEDIUM", (281, 400)),
+    (3, "LARGE", (561, 800))
 ]
 
 
@@ -19,31 +19,32 @@ class Plant:
         self.pot = random.choice(POT_SIZES)
 
         self.dead = False
-        self.initial_moisture = random.random()
-        self.moisture = self.initial_moisture
-        self.pot_size = self.pot[1]
+        self.initial_moisture = random.random()  # do not generate 0
+        self.current_moisture = self.initial_moisture
+        # self.pot_size = self.pot[1]
         self.soil = random.randint(*self.pot[2])
+        self.max_water_amount = self.soil * 0.3
 
     def __str__(self):
         return "Size: " + self.pot[1] + "\nSoil: " + str(self.soil) + "\n"
 
     def reset(self):
-        self.moisture = self.initial_moisture
+        self.current_moisture = self.initial_moisture
         self.dead = False
 
     def current_state(self):
-        return [self.moisture, self.soil], self.dead
+        return [self.current_moisture, self.soil], self.dead
 
-    def water(self, amt_watr):
-        self.moisture = min(self.moisture + (amt_watr/self.soil), 1)
+    def water(self, water_amount):
+        # ensure amount_water is less than self.max_amount_water
+        self.current_moisture = min(self.current_moisture + (water_amount / self.soil), 1)
         # can only kill by over watering
-        if self.moisture < 0.01:
+        if self.current_moisture < 0.01:
             self.dead = True
-        return self.moisture, self.dead
-
+        return self.current_moisture, self.dead
 
     def update(self):
-        self.moisture = self.moisture * mt.exp(-self.moisture / self.soil)
+        # water level dropping over time
 
-
-
+        # TODO rework logic
+        self.current_moisture = self.current_moisture * math.exp(-self.current_moisture / self.soil)
