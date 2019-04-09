@@ -47,4 +47,4 @@ class Plant:
         # water level dropping over time
 
         # TODO rework logic
-        self.current_moisture = self.current_moisture * math.exp(-self.current_moisture / self.soil)
+        self.current_moisture = self.current_moisture * math.exp(-(self.current_moisture * self.pot[2][1]) / self.soil)
