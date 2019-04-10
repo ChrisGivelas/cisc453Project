@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
-import random
 from environment import *
 import numpy as np
 from collections import deque
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.optimizers import Adam
+from numpy.random import seed
+import pylab
+from multiprocessing import Process
 
-EPISODES = 1000
+seed(7)
+EPISODES = 200
+EPISODE_LENGTH = 80
 
 
 class DQNAgent:
@@ -27,9 +31,9 @@ class DQNAgent:
         # Neural Net for Deep-Q learning Model
         model = Sequential()
         # each add is another layer with a specified number of neurons
-        model.add(Dense(24, input_dim=self.state_size, activation='relu'))
-        model.add(Dense(24, activation='relu'))
-        model.add(Dense(self.action_size, activation='sigmoid'))
+        model.add(Dense(24, input_dim=self.state_size, activation='linear'))
+        model.add(Dense(24, activation='linear'))
+        model.add(Dense(self.action_size, activation='linear'))
         model.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
         return model
 
@@ -40,7 +44,7 @@ class DQNAgent:
         # if np.random.rand() <= self.epsilon:
         #    return random.randrange(self.action_size)
         act_values = self.model.predict(state)
-        return act_values[0][0] * 800  # 0 < act_values[0][0] < 1
+        return act_values[0][0]  # 0 < act_values[0][0] < 1
 
     def replay(self, batch_size):
         minibatch = random.sample(self.memory, batch_size)
@@ -50,7 +54,7 @@ class DQNAgent:
                 target = (reward + self.gamma *
                           int(self.model.predict(next_state)[0][0] < self.out_threshold))
             target_f = self.model.predict(state)
-            # target_f[0][action] = target
+            target_f[0][action] = target
 
             self.model.fit(state, target_f, epochs=1, verbose=0)
         if self.epsilon > self.epsilon_min:
@@ -63,8 +67,35 @@ class DQNAgent:
         self.model.save_weights(name)
 
 
-if __name__ == "__main__":
-    env = Environment(num_plants=20, good_reward_func=True)
+# if __name__ == "__main__":
+#     env = Environment(num_plants=20, good_reward_func=True)
+#     state_size = env.observation_space
+#     action_size = env.action_space
+#     agent = DQNAgent(state_size, action_size)
+#     # agent.load("./save/cartpole-dqn.h5")
+#     done = False
+#     batch_size = 32
+#
+#     for e in range(EPISODES):
+#         state = env.reset()
+#         state = np.reshape(state, [1, state_size])
+#         for time in range(EPISODE_LENGTH):
+#             pour_amount = agent.act(state)
+#             next_state, reward, done = env.step(pour_amount)
+#             reward = reward if not done else -10
+#             next_state = np.reshape(next_state, [1, state_size])
+#             agent.remember(state, pour_amount, reward, next_state, done)
+#
+#             state = next_state
+#             if done or len(agent.memory) > 1 and len(agent.memory) % EPISODE_LENGTH == 0:
+#                 print("episode: {}/{}, score: {}, e: {:.2}"
+#                       .format(e, EPISODES, time, agent.epsilon))
+#                 break
+#             if len(agent.memory) > batch_size:
+#                 agent.replay(batch_size)
+
+def run_simulation(title, good_reward_func, num_plants=20):
+    env = Environment(num_plants=num_plants, good_reward_func=good_reward_func)
     state_size = env.observation_space
     action_size = env.action_space
     agent = DQNAgent(state_size, action_size)
@@ -75,18 +106,61 @@ if __name__ == "__main__":
     for e in range(EPISODES):
         state = env.reset()
         state = np.reshape(state, [1, state_size])
-        for time in range(500):
+        for time in range(EPISODE_LENGTH):
             pour_amount = agent.act(state)
             next_state, reward, done = env.step(pour_amount)
             reward = reward if not done else -10
             next_state = np.reshape(next_state, [1, state_size])
             agent.remember(state, pour_amount, reward, next_state, done)
+
             state = next_state
-            if done or len(agent.memory) > 1 and len(agent.memory) % 50 == 0:
-                print("episode: {}/{}, score: {}, e: {:.2}"
-                      .format(e, EPISODES, time, agent.epsilon))
-                break
             if len(agent.memory) > batch_size:
                 agent.replay(batch_size)
-        # if e % 10 == 0:
-        #     agent.save("./save/cartpole-dqn.h5")
+
+            print("Time step: {}, Pour amount: {}, Reward: {}, All Plants Died: {}\n"
+                  .format(time, pour_amount, reward, done))
+
+        print("episode: {}/{}\n\n".format(e, EPISODES))
+
+        for index in range(num_plants):
+            plot_plant(agent.memory, num_plants, index, title + " - Plant #" + str(index))
+
+
+def plot_plant(memory, numb_plants, plant_index, title):
+    water_amount_array = []
+    reward = []
+    moisture_level_array = []
+
+    for index in range(len(memory)):
+        if index % numb_plants == plant_index:
+            water_amount_array.append(memory[index][1])
+            reward.append(memory[index][2])
+            moisture_level_array.append(memory[index][0].min())
+
+    pylab.title(title)
+    pylab.plot(water_amount_array, '-r', label="Water Amount")
+    pylab.plot(reward, '-b', label="Reward")
+    pylab.plot(moisture_level_array, '-g', label="Moisture")
+    pylab.legend(loc='upper left')
+    # pylab.ylim(-0.25, 1.5)
+    pylab.show()
+
+
+def sim1():
+    run_simulation("Good Reward Function", True)
+
+
+def sim2():
+    run_simulation("Bad Reward Function", False)
+
+
+if __name__ == "__main__":
+    # p1 = Process(target=sim1)
+    # p1.start()
+    # p2 = Process(target=sim2)
+    # p2.start()
+    # p1.join()
+    # p2.join()
+    sim2()
+    print("RUNNING SIMULATION WITH BAD REWARD FUNCTION")
+    # print("RUNNING SIMULATION WITH GOOD REWARD FUNCTION")

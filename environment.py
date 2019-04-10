@@ -1,5 +1,8 @@
 from plant import *
 import numpy as np
+from numpy.random import seed
+
+seed(7)
 
 
 class Environment:
@@ -21,24 +24,29 @@ class Environment:
 
     def step(self, water_amount):
         # states contains "current_moisture and soil"
-        state, dead = self.plants[self.time_step].current_state()
+        state = self.plants[self.time_step].current_state()
         plant = self.plants[self.time_step]
 
         old_moisture = state[0]  # current_moisture
+        # print("Old moisture: " + str(old_moisture))
         # print("-----Watering plant " + str(self.time_step) + str(self.plants[self.time_step])
         #       + "with amount: " + str(water_amount))
-        new_moisture = plant.water(water_amount)  # carry out watering
+        new_moisture, dead = plant.water(water_amount)  # carry out watering
+        print("Plant: " + str(self.time_step) + " with new moisture: " + str(new_moisture) + " and Dead: " + str(dead) + "\n")
 
         if self.good_reward_func:
-            reward = self.good_reward(old_moisture, new_moisture, dead, water_amount)
+            reward = self.good_reward(old_moisture, new_moisture, dead)
         else:
             reward = self.bad_reward(dead, water_amount)
 
+        new_state, _ = plant.current_state()
+
         self.time_step += 1
         self.time_step = self.time_step % self.num_plants
-        new_state, dead = self.plants[self.time_step].current_state()
 
-        # print("Time step: " + str(self.time_step) + " Reward: " + str(reward))
+        if self.time_step > 0 and self.time_step % self.num_plants == 0:
+            for p in self.plants:
+                p.update()
 
         return new_state, reward, self.is_done()
 
@@ -59,7 +67,7 @@ class Environment:
         return 0
 
     @staticmethod
-    def good_reward(old_moisture, new_moisture, dead, water_amount):
+    def good_reward(old_moisture, new_moisture, dead):
         # more than "half-way saturated"
         if old_moisture > 0.5 or dead:
             return 0
