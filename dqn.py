@@ -26,9 +26,10 @@ class DQNAgent:
     def _build_model(self):
         # Neural Net for Deep-Q learning Model
         model = Sequential()
-        model.add(Dense(24, input_dim=self.state_size, activation='linear'))
-        model.add(Dense(24, activation='linear'))
-        model.add(Dense(self.action_size, activation='linear'))
+        # each add is another layer with a specified number of neurons
+        model.add(Dense(24, input_dim=self.state_size, activation='relu'))
+        model.add(Dense(24, activation='relu'))
+        model.add(Dense(self.action_size, activation='sigmoid'))
         model.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
         return model
 
@@ -36,10 +37,10 @@ class DQNAgent:
         self.memory.append((state, action, reward, next_state, done))
 
     def act(self, state):
-        #if np.random.rand() <= self.epsilon:
+        # if np.random.rand() <= self.epsilon:
         #    return random.randrange(self.action_size)
         act_values = self.model.predict(state)
-        return int(act_values[0][0] < self.out_threshold) # returns action
+        return act_values[0][0] * 800  # 0 < act_values[0][0] < 1
 
     def replay(self, batch_size):
         minibatch = random.sample(self.memory, batch_size)
@@ -49,7 +50,7 @@ class DQNAgent:
                 target = (reward + self.gamma *
                           int(self.model.predict(next_state)[0][0] < self.out_threshold))
             target_f = self.model.predict(state)
-            #target_f[0][action] = target
+            # target_f[0][action] = target
 
             self.model.fit(state, target_f, epochs=1, verbose=0)
         if self.epsilon > self.epsilon_min:
@@ -63,7 +64,7 @@ class DQNAgent:
 
 
 if __name__ == "__main__":
-    env = Environment(num_plants=5, good_reward_func=False)
+    env = Environment(num_plants=20, good_reward_func=True)
     state_size = env.observation_space
     action_size = env.action_space
     agent = DQNAgent(state_size, action_size)

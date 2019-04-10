@@ -25,6 +25,8 @@ class Environment:
         plant = self.plants[self.time_step]
 
         old_moisture = state[0]  # current_moisture
+        # print("-----Watering plant " + str(self.time_step) + str(self.plants[self.time_step])
+        #       + "with amount: " + str(water_amount))
         new_moisture = plant.water(water_amount)  # carry out watering
 
         if self.good_reward_func:
@@ -63,9 +65,9 @@ class Environment:
             return 0
         else:
             # not fully saturated
-            if new_moisture <= 1:
+            if new_moisture[0] <= 1:
                 # TODO rework logic?
-                return water_amount / (1 + old_moisture)
+                return (new_moisture[0] - old_moisture) / old_moisture
             return 0
 
     def current_state(self):

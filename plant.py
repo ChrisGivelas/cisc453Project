@@ -26,7 +26,7 @@ class Plant:
         self.max_water_amount = self.soil * 0.3
 
     def __str__(self):
-        return "Size: " + self.pot[1] + "\nSoil: " + str(self.soil) + "\n"
+        return "\nSize: " + self.pot[1] + "\nSoil: " + str(self.soil) + "\n"
 
     def reset(self):
         self.current_moisture = self.initial_moisture
