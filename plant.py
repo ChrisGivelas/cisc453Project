@@ -47,6 +47,4 @@ class Plant:
     def update(self):
         # ensures that water level drops over time (moisture decay)
         # TODO rework logic
-        self.current_moisture = self.current_moisture * math.exp(
-            -(self.current_moisture / self.pot[2][1])
-        )
+        self.current_moisture = self.current_moisture * math.exp(-self.current_moisture)

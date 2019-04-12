@@ -27,17 +27,20 @@ class Environment:
         state = self.plants[self.time_step].current_state()
         plant = self.plants[self.time_step]
 
-        old_moisture = state[0]  # current_moisture
+        old_moisture = state[0][0]  # current_moisture
         # print("Old moisture: " + str(old_moisture))
         # print("-----Watering plant " + str(self.time_step) + str(self.plants[self.time_step])
         #       + "with amount: " + str(water_amount))
         new_moisture, dead = plant.water(water_amount)  # carry out watering
-        print("Plant: " + str(self.time_step) + " with new moisture: " + str(new_moisture) + " and Dead: " + str(dead) + "\n")
+        # print("Plant: " + str(self.time_step) + " with new moisture: " + str(new_moisture) + " and Dead: " + str(dead) + "\n")
 
-        if self.good_reward_func:
-            reward = self.good_reward(old_moisture, new_moisture, dead)
-        else:
-            reward = self.bad_reward(dead, water_amount)
+        # if self.good_reward_func:
+        #     reward = self.good_reward(old_moisture, new_moisture, dead, water_amount)
+        # else:
+        #     reward = self.bad_reward(dead, water_amount)
+
+        reward = (self.good_reward(new_moisture, dead, water_amount)
+                  + self.bad_reward(dead, water_amount)) / 2
 
         new_state, _ = plant.current_state()
 
@@ -57,7 +60,8 @@ class Environment:
                 all_dead = False
                 break
         if all_dead:
-            print("ALL DEAD")
+            pass
+            # print("ALL DEAD")
         return all_dead
 
     @staticmethod
@@ -67,16 +71,18 @@ class Environment:
         return 0
 
     @staticmethod
-    def good_reward(old_moisture, new_moisture, dead):
+    def good_reward(new_moisture, dead, water_amount):
+        if water_amount == 0:
+            return 0
+
         # more than "half-way saturated"
-        if old_moisture > 0.5 or dead:
+        if dead:
             return 0
-        else:
-            # not fully saturated
-            if new_moisture[0] <= 1:
-                # TODO rework logic?
-                return (new_moisture[0] - old_moisture) / old_moisture
-            return 0
+
+        # gaussian function
+        reward = np.exp(-np.power(new_moisture - 0.5, 2.) / (2 * np.power(0.25, 2.)))
+
+        return reward
 
     def current_state(self):
         return np.array(self.plants[self.time_step].current_state()[0])

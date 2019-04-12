@@ -8,10 +8,11 @@ from keras.optimizers import Adam
 from numpy.random import seed
 import pylab
 from multiprocessing import Process
+import os
 
 seed(7)
-EPISODES = 200
-EPISODE_LENGTH = 80
+DEFAULT_EPISODES = 80
+DEFAULT_EPISODE_LENGTH = 40
 
 
 class DQNAgent:
@@ -31,8 +32,8 @@ class DQNAgent:
         # Neural Net for Deep-Q learning Model
         model = Sequential()
         # each add is another layer with a specified number of neurons
-        model.add(Dense(24, input_dim=self.state_size, activation='linear'))
-        model.add(Dense(24, activation='linear'))
+        model.add(Dense(48, input_dim=self.state_size, activation='relu'))
+        model.add(Dense(48, activation='relu'))
         model.add(Dense(self.action_size, activation='linear'))
         model.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
         return model
@@ -40,61 +41,35 @@ class DQNAgent:
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
 
-    def act(self, state):
-        # if np.random.rand() <= self.epsilon:
-        #    return random.randrange(self.action_size)
+    def bad_act(self, state):
         act_values = self.model.predict(state)
+        return act_values[0][0]  # 0 < act_values[0][0] < 1
+
+    def good_act(self, state):
+        act_values = self.model.predict(state)
+        # changing negative water amounts to zero
+
+        if float("%0.2f" % (act_values[0][0])) <= 0.00:
+            return float("%0.2f" % 0)
         return act_values[0][0]  # 0 < act_values[0][0] < 1
 
     def replay(self, batch_size):
         minibatch = random.sample(self.memory, batch_size)
-        for state, action, reward, next_state, done in minibatch:
+        for state, _, reward, next_state, done in minibatch:
             target = reward
             if not done:
-                target = (reward + self.gamma *
-                          int(self.model.predict(next_state)[0][0] < self.out_threshold))
+                target = (reward + self.gamma * self.model.predict(next_state)[0][0])
+                # int(self.model.predict(next_state)[0][0] < self.out_threshold))
             target_f = self.model.predict(state)
-            target_f[0][action] = target
+            target_f[0][0] = target
 
             self.model.fit(state, target_f, epochs=1, verbose=0)
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
-    def load(self, name):
-        self.model.load_weights(name)
 
-    def save(self, name):
-        self.model.save_weights(name)
-
-
-# if __name__ == "__main__":
-#     env = Environment(num_plants=20, good_reward_func=True)
-#     state_size = env.observation_space
-#     action_size = env.action_space
-#     agent = DQNAgent(state_size, action_size)
-#     # agent.load("./save/cartpole-dqn.h5")
-#     done = False
-#     batch_size = 32
-#
-#     for e in range(EPISODES):
-#         state = env.reset()
-#         state = np.reshape(state, [1, state_size])
-#         for time in range(EPISODE_LENGTH):
-#             pour_amount = agent.act(state)
-#             next_state, reward, done = env.step(pour_amount)
-#             reward = reward if not done else -10
-#             next_state = np.reshape(next_state, [1, state_size])
-#             agent.remember(state, pour_amount, reward, next_state, done)
-#
-#             state = next_state
-#             if done or len(agent.memory) > 1 and len(agent.memory) % EPISODE_LENGTH == 0:
-#                 print("episode: {}/{}, score: {}, e: {:.2}"
-#                       .format(e, EPISODES, time, agent.epsilon))
-#                 break
-#             if len(agent.memory) > batch_size:
-#                 agent.replay(batch_size)
-
-def run_simulation(title, good_reward_func, num_plants=20):
+def run_simulation(title, good_reward_func, num_plants=20, episodes=DEFAULT_EPISODES,
+                   episode_length=DEFAULT_EPISODE_LENGTH):
     env = Environment(num_plants=num_plants, good_reward_func=good_reward_func)
     state_size = env.observation_space
     action_size = env.action_space
@@ -103,13 +78,18 @@ def run_simulation(title, good_reward_func, num_plants=20):
     done = False
     batch_size = 32
 
-    for e in range(EPISODES):
+    for e in range(episodes):
         state = env.reset()
         state = np.reshape(state, [1, state_size])
-        for time in range(EPISODE_LENGTH):
-            pour_amount = agent.act(state)
+        for time in range(episode_length):
+            if good_reward_func:
+                pour_amount = agent.good_act(state)
+            else:
+                pour_amount = agent.bad_act(state)
+
+            # print(str(pour_amount))
+
             next_state, reward, done = env.step(pour_amount)
-            reward = reward if not done else -10
             next_state = np.reshape(next_state, [1, state_size])
             agent.remember(state, pour_amount, reward, next_state, done)
 
@@ -117,16 +97,19 @@ def run_simulation(title, good_reward_func, num_plants=20):
             if len(agent.memory) > batch_size:
                 agent.replay(batch_size)
 
-            print("Time step: {}, Pour amount: {}, Reward: {}, All Plants Died: {}\n"
-                  .format(time, pour_amount, reward, done))
+        print("episode: {}/{}\n\n".format(e, episodes))
 
-        print("episode: {}/{}\n\n".format(e, EPISODES))
+    path = title + "_" + str(episodes) + "_" + str(episode_length)
 
-        for index in range(num_plants):
-            plot_plant(agent.memory, num_plants, index, title + " - Plant #" + str(index))
+    os.mkdir("plots/" + path)
+
+    for index in range(num_plants):
+        plot_plant(agent.memory, num_plants, index, title + " - Plant #" + str(index), env.plants[index], path)
+
+    print("Simulation " + path + " done")
 
 
-def plot_plant(memory, numb_plants, plant_index, title):
+def plot_plant(memory, numb_plants, plant_index, title, plant, path):
     water_amount_array = []
     reward = []
     moisture_level_array = []
@@ -141,17 +124,27 @@ def plot_plant(memory, numb_plants, plant_index, title):
     pylab.plot(water_amount_array, '-r', label="Water Amount")
     pylab.plot(reward, '-b', label="Reward")
     pylab.plot(moisture_level_array, '-g', label="Moisture")
-    pylab.legend(loc='upper left')
-    # pylab.ylim(-0.25, 1.5)
-    pylab.show()
+    pylab.plot([], '-o', label="Pot size: " + plant.pot[1])
+    pylab.plot([], '-p', label="Soil amount: " + str(plant.soil))
+    pylab.legend(loc='upper right')
+
+    pylab.savefig('plots/' + path + "/" + title + '.png')
+
+    pylab.close()
 
 
 def sim1():
-    run_simulation("Good Reward Function", True)
+    # run_simulation("Good Reward Function", True, episodes=500, episode_length=200)
+    # run_simulation("Good Reward Function", True, episodes=600, episode_length=300)
+    # run_simulation("Good Reward Function", True, episodes=700, episode_length=400)
+    run_simulation("Good Reward Function", True, episodes=800, episode_length=400)
 
 
 def sim2():
-    run_simulation("Bad Reward Function", False)
+    # run_simulation("Bad Reward Function", False, episodes=500, episode_length=200)
+    # run_simulation("Bad Reward Function", False, episodes=600, episode_length=300)
+    # run_simulation("Bad Reward Function", False, episodes=700, episode_length=400)
+    run_simulation("Bad Reward Function", False, episodes=500, episode_length=200)
 
 
 if __name__ == "__main__":
@@ -161,6 +154,4 @@ if __name__ == "__main__":
     # p2.start()
     # p1.join()
     # p2.join()
-    sim2()
-    print("RUNNING SIMULATION WITH BAD REWARD FUNCTION")
-    # print("RUNNING SIMULATION WITH GOOD REWARD FUNCTION")
+    sim1()
