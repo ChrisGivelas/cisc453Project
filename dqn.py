@@ -1,16 +1,13 @@
-# -*- coding: utf-8 -*-
 from environment import *
 import numpy as np
 from collections import deque
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.optimizers import Adam
-from numpy.random import seed
 import pylab
 from multiprocessing import Process
 import os
 
-seed(7)
 DEFAULT_EPISODES = 80
 DEFAULT_EPISODE_LENGTH = 40
 
@@ -41,16 +38,8 @@ class DQNAgent:
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
 
-    def bad_act(self, state):
+    def act(self, state):
         act_values = self.model.predict(state)
-        return act_values[0][0]  # 0 < act_values[0][0] < 1
-
-    def good_act(self, state):
-        act_values = self.model.predict(state)
-        # changing negative water amounts to zero
-
-        if float("%0.2f" % (act_values[0][0])) <= 0.00:
-            return float("%0.2f" % 0)
         return act_values[0][0]  # 0 < act_values[0][0] < 1
 
     def replay(self, batch_size):
@@ -74,21 +63,13 @@ def run_simulation(title, good_reward_func, num_plants=20, episodes=DEFAULT_EPIS
     state_size = env.observation_space
     action_size = env.action_space
     agent = DQNAgent(state_size, action_size)
-    # agent.load("./save/cartpole-dqn.h5")
-    done = False
     batch_size = 32
 
     for e in range(episodes):
         state = env.reset()
         state = np.reshape(state, [1, state_size])
         for time in range(episode_length):
-            if good_reward_func:
-                pour_amount = agent.good_act(state)
-            else:
-                pour_amount = agent.bad_act(state)
-
-            # print(str(pour_amount))
-
+            pour_amount = agent.act(state)
             next_state, reward, done = env.step(pour_amount)
             next_state = np.reshape(next_state, [1, state_size])
             agent.remember(state, pour_amount, reward, next_state, done)
@@ -133,25 +114,25 @@ def plot_plant(memory, numb_plants, plant_index, title, plant, path):
     pylab.close()
 
 
-def sim1():
-    # run_simulation("Good Reward Function", True, episodes=500, episode_length=200)
-    # run_simulation("Good Reward Function", True, episodes=600, episode_length=300)
-    # run_simulation("Good Reward Function", True, episodes=700, episode_length=400)
-    run_simulation("Good Reward Function", True, episodes=800, episode_length=400)
-
-
-def sim2():
-    # run_simulation("Bad Reward Function", False, episodes=500, episode_length=200)
-    # run_simulation("Bad Reward Function", False, episodes=600, episode_length=300)
-    # run_simulation("Bad Reward Function", False, episodes=700, episode_length=400)
-    run_simulation("Bad Reward Function", False, episodes=500, episode_length=200)
-
-
-if __name__ == "__main__":
-    # p1 = Process(target=sim1)
-    # p1.start()
-    # p2 = Process(target=sim2)
-    # p2.start()
-    # p1.join()
-    # p2.join()
-    sim1()
+# def sim1():
+#     # run_simulation("Good Reward Function", True, episodes=500, episode_length=200)
+#     # run_simulation("Good Reward Function", True, episodes=600, episode_length=300)
+#     # run_simulation("Good Reward Function", True, episodes=700, episode_length=400)
+#     run_simulation("Good Reward Function", True, episodes=800, episode_length=400)
+#
+#
+# def sim2():
+#     # run_simulation("Bad Reward Function", False, episodes=500, episode_length=200)
+#     # run_simulation("Bad Reward Function", False, episodes=600, episode_length=300)
+#     # run_simulation("Bad Reward Function", False, episodes=700, episode_length=400)
+#     run_simulation("Bad Reward Function", False, episodes=500, episode_length=200)
+#
+#
+# if __name__ == "__main__":
+#     # p1 = Process(target=sim1)
+#     # p1.start()
+#     # p2 = Process(target=sim2)
+#     # p2.start()
+#     # p1.join()
+#     # p2.join()
+#     sim1()
