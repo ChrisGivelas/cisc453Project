@@ -29,6 +29,8 @@ def run_simulation(title="", num_plants=20, episodes=DEFAULT_EPISODES, episode_l
             if len(agent.memory) > batch_size:
                 agent.replay(batch_size)
 
+        print("Episode {} of {} done...\n".format(e, episodes))
+
     generate_graphs(agent, env, title, num_plants, episodes, episode_length)
 
 
