@@ -1,8 +1,9 @@
 from agent import Agent
 from environment import Environment
 from time import gmtime, strftime
+from tkinter import *
 import numpy
-import pylab
+import matplotlib.pyplot as pp
 import os
 
 DEFAULT_EPISODES = 80
@@ -62,18 +63,32 @@ def plot_plant(data_points, num_plants, plant_index, title, plant, path):
             reward.append(data_points[index][2])
             moisture_level_array.append(data_points[index][0].min())
 
-    pylab.title(title)
-    pylab.plot(water_amount_array, '-r', label="Water Amount")
-    pylab.plot(reward, '-b', label="Reward")
-    pylab.plot(moisture_level_array, '-g', label="Moisture")
-    pylab.plot([], '-o', label="Pot size: " + plant.pot[0])
-    pylab.plot([], '-p', label="Soil amount: " + str(plant.soil))
-    pylab.legend(loc='upper right')
+    pp.title(title)
+    pp.plot(water_amount_array, '-r', label="Water Amount")
+    pp.plot(reward, '-b', label="Reward")
+    pp.plot(moisture_level_array, '-g', label="Moisture")
+    pp.plot([], '-o', label="Pot size: " + plant.pot[0])
+    pp.plot([], '-p', label="Soil amount: " + str(plant.soil))
+    pp.legend(loc='upper right')
 
-    pylab.savefig('plots/' + path + "/" + title + '.png')
+    pp.savefig('plots/' + path + "/" + title + '.png')
 
-    pylab.close()
+    pp.close()
 
 
 if __name__ == "__main__":
-    run_simulation(episodes=500, episode_length=200)
+    root = Tk()
+
+    episode_entry = Entry(root)
+    episode_entry.pack()
+
+    time_steps_entry = Entry(root)
+    time_steps_entry.pack()
+
+    run_sim_button = Button(root, text="Run Simulation",
+                            command=lambda: run_simulation(episodes=int(episode_entry.get()),
+                                                           episode_length=int(time_steps_entry.get())))
+
+    run_sim_button.pack()
+
+    root.mainloop()
