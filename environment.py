@@ -4,11 +4,10 @@ import numpy
 
 
 class Environment:
-    def __init__(self, num_plants, good_reward_func):
+    def __init__(self, num_plants):
         self.observation_space = 2  # current_moisture and soil
         self.action_space = 1
         self.num_plants = num_plants
-        self.good_reward_func = good_reward_func  # true or false
 
         # function reset() resets these
         self.time_step = 0

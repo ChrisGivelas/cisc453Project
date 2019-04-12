@@ -36,8 +36,8 @@ class Agent:
         return act_values[0][0]  # 0 < act_values[0][0] < 1
 
     def replay(self, batch_size):
-        minibatch = random.sample(self.memory, batch_size)
-        for state, _, reward, next_state, done in minibatch:
+        mini_batch = random.sample(self.memory, batch_size)
+        for state, _, reward, next_state, done in mini_batch:
             target = reward
             if not done:
                 target = (reward + self.gamma * self.model.predict(next_state)[0][0])
