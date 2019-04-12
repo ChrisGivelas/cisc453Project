@@ -1,6 +1,6 @@
 from plant import *
 from rewards import *
-import numpy as np
+import numpy
 
 
 class Environment:
@@ -51,4 +51,4 @@ class Environment:
         return all_dead
 
     def current_state(self):
-        return np.array(self.plants[self.time_step].current_state())
+        return numpy.array(self.plants[self.time_step].current_state())
