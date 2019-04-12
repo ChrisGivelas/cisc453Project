@@ -33,6 +33,9 @@ def run_simulation(title="", num_plants=20, episodes=DEFAULT_EPISODES, episode_l
 
 
 def generate_graphs(agent, environment, title, num_plants, episodes, episode_length):
+    if not os.path.exists("plots"):
+        os.mkdir("plots")
+
     if title == "":
         path = strftime("%Y-%m-%d %H_%M_%S", gmtime()) + " (" + str(episodes) + "_" + str(episode_length) + ")"
     else:
