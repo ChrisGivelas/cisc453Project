@@ -46,10 +46,15 @@ move all files from our software to your virtual environment.
 To run our software, open up the command line to the location of main.py, and type
 "python main.py".
 
-A small window should pop up that gives the user the ability to tweak the training of
-our agent. Hitting "Run Simulation" will start the training process.
+Several statements will appear on the command line asking the user for input:
+- Training episodes are the number of epochs in this simulation. Each episode
+ends once it complete the specified number of time steps, or when all plants die
+- Time steps are the number of individual watering's that occur through out a training
+episode
+- Number of plants is the number of plants used in this simulation
 
-At the end of the training, a new directory will be created called "plots", and this directory
-will store line graphs containing information about each plant in the simulation.
+At the end of the training, a new directory will be created (in the same directory as main.py) called "plots", and this directory
+will store line graphs containing information about each plant in the simulation. They can be used to verify whether
+the training process was a success or not.
 
 

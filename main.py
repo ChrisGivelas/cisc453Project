@@ -11,6 +11,8 @@ DEFAULT_EPISODE_LENGTH = 40
 
 
 def run_simulation(title="", num_plants=20, episodes=DEFAULT_EPISODES, episode_length=DEFAULT_EPISODE_LENGTH):
+    print("START SIMULATION")
+
     env = Environment(num_plants=num_plants)
     state_size = env.observation_space
     action_size = env.action_space
@@ -33,6 +35,8 @@ def run_simulation(title="", num_plants=20, episodes=DEFAULT_EPISODES, episode_l
         print("Episode {} of {} done...\n".format(e, episodes))
 
     generate_graphs(agent, env, title, num_plants, episodes, episode_length)
+
+    print("END SIMULATION")
 
 
 def generate_graphs(agent, environment, title, num_plants, episodes, episode_length):
@@ -63,12 +67,10 @@ def plot_plant(data_points, num_plants, plant_index, title, plant, path):
             reward.append(data_points[index][2])
             moisture_level_array.append(data_points[index][0].min())
 
-    pp.title(title)
+    pp.title(title + " | " + "Size: " + plant.pot[0] + " | " + "Soil: " + str(plant.soil))
     pp.plot(water_amount_array, '-r', label="Water Amount")
     pp.plot(reward, '-b', label="Reward")
     pp.plot(moisture_level_array, '-g', label="Moisture")
-    pp.plot([], '-o', label="Pot size: " + plant.pot[0])
-    pp.plot([], '-p', label="Soil amount: " + str(plant.soil))
     pp.legend(loc='upper right')
 
     pp.savefig('plots/' + path + "/" + title + '.png')
@@ -77,18 +79,19 @@ def plot_plant(data_points, num_plants, plant_index, title, plant, path):
 
 
 if __name__ == "__main__":
-    root = Tk()
+    episodes = input("Number of Training Episodes:")
 
-    episode_entry = Entry(root)
-    episode_entry.pack()
+    while not episodes.isdigit():
+        episodes = input("Number of Training Episodes:")
 
-    time_steps_entry = Entry(root)
-    time_steps_entry.pack()
+    time_steps = input("Number of Time Steps per Episode:")
 
-    run_sim_button = Button(root, text="Run Simulation",
-                            command=lambda: run_simulation(episodes=int(episode_entry.get()),
-                                                           episode_length=int(time_steps_entry.get())))
+    while not time_steps.isdigit():
+        time_steps = input("Number of Time Steps per Episode:")
 
-    run_sim_button.pack()
+    num_plants = input("Number of Plants:")
 
-    root.mainloop()
+    while not num_plants.isdigit():
+        num_plants = input("Number of Plants:")
+
+    run_simulation(num_plants=int(num_plants), episodes=int(episodes), episode_length=int(time_steps))
